@@ -25,10 +25,25 @@ get_full_path() {
 
 SCRIPT_PATH="$(get_full_path ./)"
 
+status ()
+{
+    if [ ! -d ${SCRIPT_PATH}/${CLUSTER_NAME} ];then
+        echo "Can not find ${SCRIPT_PATH}/${CLUSTER_NAME}"
+        exit 1
+    fi
+    cd ${SCRIPT_PATH}/${CLUSTER_NAME}
+    port=$(terraform show  |grep published_port | awk '{print $NF}')
+    while(true);do
+        sts=$(curl -XGET http://127.0.0.1:${port}/index.html 2>&1 | grep Hello | awk -F">" '{print $2}' | awk -F"<" '{print $1}')
+        echo "http://127.0.0.1:${port}/index.html -> ${sts}"
+        sleep 5
+    done
+}
+
 
 usage ()
 {
-	echo $"Usage: $0 {start|stop <cluster name>" 1>&2
+	echo $"Usage: $0 {start|stop|status <cluster name>" 1>&2
 	RETVAL=2
 }
 
@@ -61,6 +76,7 @@ test -z "${CLUSTER_NAME}" && exit 1
 case "$1" in
     stop) stop ;;
     start) start ;;
+    status) status ;;
     *) usage ;;
 esac
 
